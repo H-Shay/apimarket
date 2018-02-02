@@ -1,15 +1,20 @@
+#other changes i would consider making: a way to structure the code so that only age
+#restricted items are checked for age, seems inefficient to check items that anyone 
+#of any age can buy 
+
 # you can buy just a few things at this apimarket
 require 'highline'
 
 
 class Apimarket
-  class NoSale < StandardError; end
+  
+  NoSale= Class.new(StandardError)
 
   def initialize(logfile, prompter)
     @logfile, @prompter = logfile, prompter
   end
 
-  def sell_me(itm_type)
+  def sell_me(itm_type) 
     itm = case itm_type
           when :beer
             Item::Beer.new(@logfile, @prompter)
@@ -24,17 +29,15 @@ class Apimarket
           else
             raise ArgumentError, "Don't know how to sell #{itm_type}"
           end
-
-    itm.rstrctns.each do |r|
-      itm.try_purchase(r.ck)
-    end
+    itm.rstrctns.each { |r| itm.try_purchase(r.ck) }
     itm.log_sale
   end
 end
 
 class HighlinePrompter
   def get_age
-    HighLine.new.ask('Age? ', Integer) # prompts for user's age, reads it in
+    # prompts for user's age, reads it in
+    HighLine.new.ask('Age? ', Integer) 
   end
 end
 
@@ -49,12 +52,7 @@ module Restriction
     end
 
     def ck
-      age = @prompter.get_age
-      if age >= DRINKING_AGE
-        true
-      else
-        false
-      end
+      @prompter.get_age >= DRINKING_AGE ? true : false
     end
   end
 
@@ -64,12 +62,7 @@ module Restriction
     end
 
     def ck
-      age = @prompter.get_age
-      if age >= SMOKING_AGE
-        true
-      else
-        false
-      end
+      @prompter.get_age >= SMOKING_AGE ? true : false
     end
   end
 
@@ -79,9 +72,8 @@ module Restriction
     end
 
     def ck
-      # pp Time.now.wday
-      # debugger
-      Time.now.wday != 0      # 0 is Sunday
+      # 0 is Sunday
+      Time.now.wday != 0      
     end
   end
 end
@@ -98,7 +90,11 @@ class Item
       f.write(nam.to_s + "\n")
     end
   end
-
+#this section I am unsure of, it seems that the nam object here is converted to a string
+#and then several lines later converted to a symbol, only to be converted back to a string
+#in the log_sale method above--> not sure if that is part of the test or if it's some 
+#sort of convention or something i am unaware of, but seemed weird enough to me that i 
+#thought i would point it out 
   def nam
     class_string = self.class.to_s
     short_class_string = class_string.sub(/^Item::/, '')
@@ -108,11 +104,7 @@ class Item
   end
 
   def try_purchase(success)
-    if success
-      return true
-    else
-      raise Apimarket::NoSale
-    end
+    success ? true : (raise Apimarket::NoSale)
   end
 
   class Beer < Item
